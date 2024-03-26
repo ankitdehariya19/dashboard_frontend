@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import Chart from 'chart.js/auto';
 
-const PieChart = ({ data, label, value }) => {
+const RadarChart = ({ data, label, value }) => {
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
 
@@ -15,22 +15,17 @@ const PieChart = ({ data, label, value }) => {
     const labels = data.map(item => item[label]);
     const values = data.map(item => item[value]);
 
-    const randomPastelColor = () => {
-      const r = Math.floor(Math.random() * 155) + 100;
-      const g = Math.floor(Math.random() * 155) + 100;
-      const b = Math.floor(Math.random() * 155) + 100;
-      return `rgb(${r}, ${g}, ${b})`;
-    };
-
     chartInstance.current = new Chart(ctx, {
-      type: 'pie',
+      type: 'radar',
       data: {
         labels: labels,
         datasets: [
           {
             label: value.charAt(0).toUpperCase() + value.slice(1),
             data: values,
-            backgroundColor: data.map(() => randomPastelColor()),
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            borderColor: 'rgb(255, 99, 132)',
+            pointBackgroundColor: 'rgb(255, 99, 132)',
           },
         ],
       },
@@ -48,11 +43,10 @@ const PieChart = ({ data, label, value }) => {
   }, [data, label, value]);
 
   return (
-    <div className="max-w-screen-xl mx-auto ">
+    <div className="max-w-screen-xl mx-auto">
       <canvas ref={chartRef} style={{ width: '100%', height: '500px' }} />
     </div>
   );
 };
 
-export default PieChart;
-// its workign perfactly
+export default RadarChart;

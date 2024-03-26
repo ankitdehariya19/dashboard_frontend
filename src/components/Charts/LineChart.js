@@ -1,86 +1,134 @@
+// import React from 'react';
+// import { Line } from 'react-chartjs-2';
+
+// const IntensityLineChart = ({ data }) => {
+//   // Aggregate data by month
+//   const aggregatedData = {};
+//   data.forEach((item) => {
+//     const publishedDate = new Date(item.published); // Ensure date is properly parsed
+//     const monthYear = `${publishedDate.getFullYear()}-${publishedDate.getMonth() + 1}`; // Group by month and year
+
+//     if (!aggregatedData[monthYear]) {
+//       aggregatedData[monthYear] = { sum: 0, count: 0 };
+//     }
+
+//     aggregatedData[monthYear].sum += item.intensity;
+//     aggregatedData[monthYear].count++;
+//   });
+
+//   const chartData = {
+//     labels: Object.keys(aggregatedData),
+//     datasets: [
+//       {
+//         label: 'Average Intensity',
+//         data: Object.values(aggregatedData).map(
+//           (aggregate) => aggregate.sum / aggregate.count
+//         ),
+//         backgroundColor: 'rgba(75,192,192,0.2)',
+//         borderColor: 'rgba(75,192,192,1)',
+//         borderWidth: 1,
+//       },
+//     ],
+//   };
+
+//   return (
+//     <div className="w-full">
+//       <Line
+//         data={chartData}
+//         options={{
+//           maintainAspectRatio: false,
+//           scales: {
+//             yAxes: [
+//               {
+//                 ticks: {
+//                   beginAtZero: true,
+//                 },
+//               },
+//             ],
+//           },
+//         }}
+//       />
+//     </div>
+//   );
+// };
+
+// export default IntensityLineChart;
+
+
 import React, { useEffect, useRef } from 'react';
-import * as d3 from 'd3';
-import useDataService from '../../services/useDataService'; // Import the useDataService hook
+import Chart from 'chart.js/auto';
 
-const LineChart = ({ filters }) => {
-    const svgRef = useRef();
-    const { data } = useDataService(); // Use the useDataService hook to fetch data
+const LineChart = ({ data, label, value }) => {
+  const chartRef = useRef(null);
+  const chartInstance = useRef(null);
 
-    useEffect(() => {
-        if (data && data.length > 0) {
-            const svg = d3.select(svgRef.current);
+  useEffect(() => {
+    if (chartInstance.current) {
+      chartInstance.current.destroy();
+    }
 
-            // Filter data based on selected filters
-            const filteredData = data.filter(item => {
-                // Apply filter conditions based on the filters object
-                return (
-                    (!filters.topic || item.topic === filters.topic) &&
-                    (!filters.sector || item.sector === filters.sector)
-                    // Add other filter conditions as needed
-                    // ...
-                );
-            });
+    const ctx = chartRef.current.getContext('2d');
 
-            // Set up chart dimensions
-            const margin = { top: 20, right: 30, bottom: 40, left: 40 };
-            const width = 600 - margin.left - margin.right;
-            const height = 400 - margin.top - margin.bottom;
+    const labels = data.map(item => item[label]);
+    const values = data.map(item => item[value]);
+    
 
-            // Clear previous chart content
-            svg.selectAll('*').remove();
+    const randomPastelColor = () => {
+      const r = Math.floor(Math.random() * 155) + 100;
+      const g = Math.floor(Math.random() * 155) + 100;
+      const b = Math.floor(Math.random() * 155) + 100;
+      return `rgb(${r}, ${g}, ${b})`;
+    };
 
-            // Parse date strings to Date objects if needed
-            filteredData.forEach(d => {
-                // Assuming 'published' property contains date strings
-                d.published = new Date(d.published);
-            });
+    chartInstance.current = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: value.charAt(0).toUpperCase() + value.slice(1), // Capitalize value for display
+            data: values,
+            borderColor: randomPastelColor(),
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            display: true,
+            title: {
+              display: true,
+              text: label.charAt(0).toUpperCase() + label.slice(1), // Capitalize label for display
+            },
+          },
+          y: {
+            display: true,
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: value.charAt(0).toUpperCase() + value.slice(1), // Capitalize value for display
+            },
+          },
+        },
+      },
+    });
 
-            // Create scales
-            const xScale = d3
-                .scaleTime()
-                .domain(d3.extent(filteredData, d => d.published))
-                .range([margin.left, width - margin.right]);
+    return () => {
+      if (chartInstance.current) {
+        chartInstance.current.destroy();
+      }
+    };
+  }, [data, label, value]); // Update chart when data, label, or value props change
 
-            const yScale = d3
-                .scaleLinear()
-                .domain([0, d3.max(filteredData, d => d.intensity)])
-                .nice()
-                .range([height - margin.bottom, margin.top]);
-
-            // Create line generator
-            const line = d3
-                .line()
-                .x(d => xScale(d.published))
-                .y(d => yScale(d.intensity));
-
-            // Append x-axis to the SVG
-            svg
-                .append('g')
-                .attr('transform', `translate(0,${height - margin.bottom})`)
-                .call(d3.axisBottom(xScale).ticks(5));
-
-            // Append y-axis to the SVG
-            svg
-                .append('g')
-                .attr('transform', `translate(${margin.left},0)`)
-                .call(d3.axisLeft(yScale));
-
-            // Append line path to the SVG
-            svg
-                .append('path')
-                .datum(filteredData)
-                .attr('fill', 'none')
-                .attr('stroke', 'steelblue')
-                .attr('stroke-width', 2)
-                .attr('d', line);
-        }
-    }, [data, filters]);
-
-    return (
-        <div className="line-chart">
-            <svg ref={svgRef} width={600} height={400}></svg>
-        </div>
-    );
+  return (
+    <div className="max-w-screen-xl mx-auto">
+      <canvas ref={chartRef} style={{ width: '100%', height: '500px' }} />
+    </div>
+  );
 };
 
 export default LineChart;

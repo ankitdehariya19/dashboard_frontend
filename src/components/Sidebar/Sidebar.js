@@ -4,7 +4,7 @@ import { FiHome, FiBarChart2, FiSettings } from 'react-icons/fi';
 
 const Sidebar = () => {
     return (
-        <div className="bg-gray-800 text-white w-64 p-4 h-screen ">
+        <div className="bg-gray-800 text-white w-64 p-4  min-h-screen max-h-full">
             <div className="flex items-center mb-8">
                 <h1 className="text-2xl font-bold">Dashboard</h1>
             </div>
